@@ -70,12 +70,19 @@ function Build-Publish {
   Copy-Item "$Root\install-bridge-service.bat" $bridgePublish -Force
   Copy-Item "$Root\uninstall-bridge-service.bat" $bridgePublish -Force
   Copy-Item $BridgeDir "$bridgePublish\tools\PhilipsHifBridge" -Recurse -Force
-  if (Test-Path "$Root\dll_NEW") {
-    Copy-Item "$Root\dll_NEW" "$bridgePublish\dll_NEW" -Recurse -Force
-  }
-  if (Test-Path "$Root\docs\Philips-HIF-PPIS-Bridge.md") {
-    New-Item -ItemType Directory -Force -Path "$bridgePublish\docs" | Out-Null
-    Copy-Item "$Root\docs\Philips-HIF-PPIS-Bridge.md" "$bridgePublish\docs" -Force
+  Get-ChildItem "$bridgePublish\tools\PhilipsHifBridge\README.md" -ErrorAction SilentlyContinue | Remove-Item -Force
+  $dllList = "$Root\scripts\bridge-dll-new.list"
+  if ((Test-Path $dllList) -and (Test-Path "$Root\dll_NEW")) {
+    $dst = "$bridgePublish\dll_NEW"
+    if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $dst | Out-Null
+    Get-Content $dllList | ForEach-Object {
+      $name = $_.Trim()
+      if ($name -and -not $name.StartsWith("#")) {
+        $src = "$Root\dll_NEW\$name"
+        if (Test-Path $src) { Copy-Item $src $dst -Force }
+      }
+    }
   }
   Write-Ok "发布完成: $PublishRoot"
 }

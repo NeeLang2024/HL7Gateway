@@ -45,8 +45,12 @@ uninstall.log
 **/*.db-shm
 **/*.db-wal
 
-# ── Internal docs (not for public repo) ──
+# ── Internal docs (not for public repo; root README.md only) ──
 docs/
+**/*.md
+!README.md
+
+# Legacy path (if Update.md still at root)
 Update.md
 
 # ── OS / IDE ──
