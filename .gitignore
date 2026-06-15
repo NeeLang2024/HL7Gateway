@@ -16,6 +16,7 @@ src/HL7Gateway.WebApi/wwwroot/
 # ── Publish / release artifacts (keep deploy scripts only) ──
 publish/Service/
 publish/WebApi/
+publish/database/
 publish/HL7Gateway.zip
 publish/**/*.exe
 publish/**/bin/
@@ -47,7 +48,6 @@ uninstall.log
 # ── Internal docs (not for public repo) ──
 docs/
 Update.md
-database/
 
 # ── OS / IDE ──
 .DS_Store

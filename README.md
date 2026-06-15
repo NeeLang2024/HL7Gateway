@@ -32,12 +32,57 @@ HL7Gateway 是一套面向医院的 HL7 中间件，包含：
 
 ---
 
+## 数据库初始化
+
+支持 **SQL Server**（生产）与 **SQLite**（本地开发）。默认数据库名：`HL7Gateway`。
+
+### 方式 A：自动建表（推荐）
+
+1. 在 SQL Server 上准备空库（或赋予登录账号建库权限）。
+2. 复制 `appsettings.example.json` → `appsettings.json`，设置 `DatabaseProvider` 与连接串：
+
+```json
+"DatabaseProvider": "SqlServer",
+"ConnectionStrings": {
+  "SqlServer": "Server=YOUR_HOST;Database=HL7Gateway;User Id=...;Password=...;TrustServerCertificate=True;"
+}
+```
+
+3. **首次启动 HL7Gateway.WebApi** — 程序内 `DbInitializer` 会自动建表、补列、建索引，并创建默认账号 `admin` / `admin123` 与飞利浦 MDIL 体征映射种子数据。
+
+SQLite 开发：将 `DatabaseProvider` 设为 `Sqlite`，连接串指向 `.db` 文件即可，同样由 WebApi 自动初始化。
+
+> 仅 **WebApi** 执行 DDL；**Service** 进程不改表结构，避免双进程同时迁移锁死 SQL Server。
+
+### 方式 B：手工执行 SQL（SSMS）
+
+`database/` 目录提供脚本，详见 [database/README.md](database/README.md)：
+
+| 脚本 | 用途 |
+|------|------|
+| `HL7Gateway_Init.sql` | 建库 + 11 张核心表 + 视图 + 种子数据 |
+| `HL7Gateway_CreateTables.sql` | 仅建 11 张核心表（库已存在时） |
+| `HL7Gateway_Migrate_20250614.sql` | Auto ADT 表、`PatientLocation` 列等增量迁移 |
+
+手工建表后，仍建议 **启动一次 WebApi**，以补全 `Users`、`WsiSubscriptions`、性能索引等运行时扩展。
+
+### 表结构概览（19 张）
+
+| 分组 | 表名 |
+|------|------|
+| HL7 核心 | `Patients`, `Visits`, `HL7Messages`, `ParsedSegments`, `Observations`, `VitalSigns`, `IdentifierMappings`, `ADTQueue`, `ADTLog`, `DeviceConnections`, `SystemLogs` |
+| 扩展 | `Users`, `WsiSubscriptions`, `AutoAdtBeds`, `AutoAdtBindings`, `AutoAdtEvents`, `AutoAdtMessages`, `AutoAdtScanRules`, `AutoAdtSettings` |
+
+源码参考：`src/HL7Gateway.Core/DbContexts/Hl7GatewayDbContext.cs`、`src/HL7Gateway.Core/Data/DbInitializer.cs`。
+
+---
+
 ## 快速开始
 
 ### 1. 克隆与配置
 
 ```bash
-git clone https://github.com/YOUR_ORG/HL7Gateway.git
+git clone https://github.com/NeeLang2024/HL7Gateway.git
 cd HL7Gateway
 ```
 
@@ -123,6 +168,7 @@ cd bridge && uninstall-bridge-service.bat
 src/                    # .NET 源码（Core / Service / WebApi）
 frontend/               # Vue 3 前端源码
 tools/PhilipsHifBridge/ # 桥接件 C# 源码
+database/               # SQL Server 建库与迁移脚本
 scripts/pack.sh         # 打包脚本
 publish/*.bat           # 安装/卸载脚本（无编译产物）
 LICENSE
@@ -187,12 +233,48 @@ Open-source HL7 integration gateway: MLLP ingestion, Vue admin UI, Philips PIC i
 
 ---
 
+## Database setup
+
+Supports **SQL Server** (production) and **SQLite** (local dev). Default database name: `HL7Gateway`.
+
+### Option A: Auto schema (recommended)
+
+1. Create an empty SQL Server database (or grant the login permission to create one).
+2. Copy `appsettings.example.json` → `appsettings.json` and set `DatabaseProvider` + connection string.
+3. **Start HL7Gateway.WebApi once** — `DbInitializer` creates tables, applies incremental migrations, seeds the default `admin` / `admin123` user and Philips MDIL identifier mappings.
+
+For SQLite, set `DatabaseProvider` to `Sqlite` and point the connection string at a `.db` file.
+
+> Only **WebApi** runs DDL. **Service** does not alter schema (avoids dual-process migration locks).
+
+### Option B: Manual SQL (SSMS)
+
+See [database/README.md](database/README.md):
+
+| Script | Purpose |
+|--------|---------|
+| `HL7Gateway_Init.sql` | Create DB + 11 core tables + view + seed data |
+| `HL7Gateway_CreateTables.sql` | Core tables only (DB already exists) |
+| `HL7Gateway_Migrate_20250614.sql` | Auto ADT tables, `PatientLocation` column, etc. |
+
+After manual scripts, still **start WebApi once** to create `Users`, `WsiSubscriptions`, performance indexes, and other runtime extensions.
+
+### Tables (19)
+
+Core HL7: `Patients`, `Visits`, `HL7Messages`, `ParsedSegments`, `Observations`, `VitalSigns`, `IdentifierMappings`, `ADTQueue`, `ADTLog`, `DeviceConnections`, `SystemLogs`.
+
+Extensions: `Users`, `WsiSubscriptions`, `AutoAdtBeds`, `AutoAdtBindings`, `AutoAdtEvents`, `AutoAdtMessages`, `AutoAdtScanRules`, `AutoAdtSettings`.
+
+See `src/HL7Gateway.Core/DbContexts/Hl7GatewayDbContext.cs` and `src/HL7Gateway.Core/Data/DbInitializer.cs`.
+
+---
+
 ## Quick start
 
 ### 1. Clone & configure
 
 ```bash
-git clone https://github.com/YOUR_ORG/HL7Gateway.git
+git clone https://github.com/NeeLang2024/HL7Gateway.git
 cd HL7Gateway
 ```
 
@@ -249,7 +331,7 @@ cd bridge && uninstall-bridge-service.bat
 
 ## What to publish on GitHub
 
-Include: `src/`, `frontend/` (source only), `tools/`, `scripts/`, root `publish/*.bat`, `LICENSE`, `README.md`, `.gitignore`.
+Include: `src/`, `frontend/` (source only), `tools/`, `database/`, `scripts/`, root `publish/*.bat`, `LICENSE`, `README.md`, `.gitignore`.
 
 Exclude: build outputs, `node_modules/`, Philips DLLs, zip releases, internal docs, secrets.
 
