@@ -1,0 +1,17 @@
+cd ~/Downloads/HL7Open
+
+# 1. 看状态
+git status -sb
+
+# 2. 看相对 GitHub 多了哪些提交（若有）
+git log origin/main..HEAD --oneline
+
+# 3. 暂存要上传的改动（docs/ 会被 gitignore，不会进仓库）
+git add .gitignore README.md scripts/ deploy/ database/ src/ frontend/ tools/ ...
+git rm -f database/README.md tools/PhilipsHifBridge/README.md 2>/dev/null
+
+# 4. 自己写 commit（不要用 Cursor Agent 代 commit，避免 cursoragent）
+git commit -m "你的说明"
+
+# 5. 推送
+git push origin main

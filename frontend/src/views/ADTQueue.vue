@@ -159,6 +159,18 @@ function bridgeLogMessage(item: any) {
   return String(item.Message ?? item.message ?? '')
 }
 
+function bridgeSubscribed() {
+  return !!bridgeStatus.value?.reachable && bridgeStatus.value?.subscriber === true
+}
+
+function bridgeStatusLabel() {
+  if (bridgeLoading.value && !bridgeStatus.value) return '读取中...'
+  if (!bridgeStatus.value?.reachable) return '桥接件未连接'
+  if (bridgeSubscribed()) return 'PIC iX 已订阅'
+  if (bridgeStatus.value?.name) return '订阅已断开或超时，等待 PIC iX 重新订阅'
+  return '桥接件在线，等待 PIC iX 订阅'
+}
+
 async function doSendRaw() {
   if (!sendMessageContent.value) {
     sendResult.value = '请先构建或输入 ADT 消息'
@@ -285,16 +297,15 @@ onUnmounted(() => {
       <div class="bridge-main">
         <div class="bridge-title">Philips HIF / PPIS 桥接</div>
         <div class="bridge-subtitle">
-          <span :class="['bridge-dot', bridgeStatus?.reachable && (bridgeStatus?.subscriber || bridgeStatus?.name) ? 'ok' : bridgeStatus?.reachable ? 'warn' : 'bad']"></span>
-          <span v-if="bridgeLoading && !bridgeStatus">读取中...</span>
-          <span v-else-if="bridgeStatus?.reachable && (bridgeStatus?.subscriber || bridgeStatus?.name)">PIC iX 已订阅</span>
-          <span v-else-if="bridgeStatus?.reachable">桥接件在线，等待 PIC iX 订阅</span>
-          <span v-else>桥接件未连接</span>
+          <span :class="['bridge-dot', bridgeSubscribed() ? 'ok' : bridgeStatus?.reachable ? 'warn' : 'bad']"></span>
+          <span>{{ bridgeStatusLabel() }}</span>
         </div>
       </div>
       <div class="bridge-details">
         <span>地址：{{ bridgeStatus?.baseUrl || '-' }}</span>
         <span>订阅：{{ bridgeStatus?.name || '-' }}</span>
+        <span>状态：{{ bridgeStatus?.subscriberState || '-' }}</span>
+        <span>最近活动：{{ bridgeStatus?.lastSubscriberActivityAt || '-' }}</span>
         <span>患者：{{ bridgeStatus?.patients ?? 0 }}</span>
         <span>已加载：{{ bridgeStatus?.loadedPatients ?? 0 }}</span>
         <span>搜索：{{ bridgeStatus?.searchCount ?? 0 }}</span>

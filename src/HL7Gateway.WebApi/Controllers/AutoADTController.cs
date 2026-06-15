@@ -19,6 +19,7 @@ public class AutoADTController : ControllerBase
     private readonly Hl7GatewayDbContext _db;
     private readonly IMemoryCache _cache;
     private readonly AutoAdtFeatureService _featureService;
+    private readonly IntegrationTraceService _trace;
     private readonly IConfiguration _configuration;
 
     private static readonly JsonSerializerOptions SnapshotJsonOptions = new()
@@ -26,11 +27,12 @@ public class AutoADTController : ControllerBase
         ReferenceHandler = ReferenceHandler.IgnoreCycles
     };
 
-    public AutoADTController(Hl7GatewayDbContext db, IMemoryCache cache, AutoAdtFeatureService featureService, IConfiguration configuration)
+    public AutoADTController(Hl7GatewayDbContext db, IMemoryCache cache, AutoAdtFeatureService featureService, IntegrationTraceService trace, IConfiguration configuration)
     {
         _db = db;
         _cache = cache;
         _featureService = featureService;
+        _trace = trace;
         _configuration = configuration;
     }
 
@@ -1013,6 +1015,13 @@ public class AutoADTController : ControllerBase
         };
         _db.AutoAdtMessages.Add(message);
         await _db.SaveChangesAsync();
+
+        await _trace.AppendAsync(_db, controlId, "AutoAdt.Queued", "AutoAdt", "OK",
+            $"Auto ADT {eventType} · 队列 #{queueItem.QueueId}", "adt-queue", null,
+            "AutoAdtEvent", autoEvent.Id);
+        await _trace.AppendAsync(_db, controlId, "AdtQueue.Pending", "Outbound", "Pending",
+            $"等待 Service 发送 · 队列 #{queueItem.QueueId}", "adt-queue", null,
+            "AdtQueue", queueItem.QueueId);
 
         return new
         {

@@ -232,7 +232,8 @@ async function runAdtAction(eventType: string, label: string, action: (data: any
 function bridgeLabel() {
   if (!bridgeStatus.value) return '读取中'
   if (!bridgeStatus.value.reachable) return '桥接件离线'
-  if (bridgeStatus.value.subscriber || bridgeStatus.value.name) return 'PIC iX 已订阅'
+  if (bridgeStatus.value.subscriber === true) return 'PIC iX 已订阅'
+  if (bridgeStatus.value.name) return '订阅已断开或超时'
   return '桥接件在线，等待订阅'
 }
 
@@ -255,9 +256,10 @@ onUnmounted(() => {
     </div>
 
     <div class="status-strip">
-      <span :class="['dot', bridgeStatus?.reachable && (bridgeStatus?.subscriber || bridgeStatus?.name) ? 'ok' : bridgeStatus?.reachable ? 'warn' : 'bad']"></span>
+      <span :class="['dot', bridgeStatus?.reachable && bridgeStatus?.subscriber === true ? 'ok' : bridgeStatus?.reachable ? 'warn' : 'bad']"></span>
       <strong>{{ bridgeLabel() }}</strong>
       <span>订阅：{{ bridgeStatus?.name || '-' }}</span>
+      <span>状态：{{ bridgeStatus?.subscriberState || '-' }}</span>
       <span>患者库：{{ bridgeStatus?.storageMode || '-' }} / {{ bridgeStatus?.store || '-' }}</span>
       <span>SearchPatient：{{ bridgeStatus?.searchCount ?? 0 }}</span>
     </div>

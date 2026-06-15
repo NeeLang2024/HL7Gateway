@@ -52,9 +52,7 @@ for %%D in (
   Microsoft.SqlServer.SmoExtended.dll
   Microsoft.SqlServer.Management.Sdk.Sfc.dll
   Microsoft.SqlServer.RegSvrEnum.dll
-) do (
-  if exist "%ROOT%\dll_NEW\%%D" copy /Y "%ROOT%\dll_NEW\%%D" "%OUT%\" >> "%LOG%" 2>&1
-)
+) do call :copy_dependency "%%D"
 if not exist "%OUT%\Philips.PlatformServices.dll" goto copy_failed
 
 if exist "%OUT%\bridge.log" del /Q "%OUT%\bridge.log" >> "%LOG%" 2>&1
@@ -96,3 +94,8 @@ echo ERROR: Failed to copy Philips DLL dependencies. See:
 echo %LOG%
 if not defined HL7GATEWAY_NO_PAUSE pause
 exit /b 1
+
+:copy_dependency
+set "DEP=%~1"
+if exist "%ROOT%\dll_NEW\%DEP%" copy /Y "%ROOT%\dll_NEW\%DEP%" "%OUT%\" >> "%LOG%" 2>&1
+exit /b 0

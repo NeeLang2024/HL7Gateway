@@ -16,12 +16,14 @@ namespace PhilipsHifBridge
         private ICommunicationObject _callbackChannel;
         private string _subscriberName;
         private DateTime _subscribedAt;
+        private DateTime? _lastSubscriberActivityAt;
         private readonly List<PatientIdentity> _patients = new List<PatientIdentity>();
         private int _searchCount;
         private DateTime? _lastSearchAt;
         private DateTime? _lastPushAt;
         private string _lastPushResult;
         private int _loadedPatientCount;
+        private static readonly TimeSpan SubscriberStaleTimeout = TimeSpan.FromSeconds(120);
 
         public HifBridgeState(BridgeLogger logger, PatientStore patientStore)
         {
@@ -62,10 +64,16 @@ namespace PhilipsHifBridge
             {
                 lock (_sync)
                 {
-                    return string.Format("subscriber={0}; name={1}; subscribedAt={2}; patients={3}; loadedPatients={4}; searchCount={5}; lastSearchAt={6}; lastPushAt={7}; lastPushResult={8}; storageMode={9}; store={10}",
-                        IsSubscriberAliveLocked(),
+                    var alive = IsSubscriberAliveLocked();
+                    var age = GetSubscriberAgeSecondsLocked();
+                    return string.Format("subscriber={0}; subscriberState={1}; name={2}; subscribedAt={3}; lastSubscriberActivityAt={4}; subscriberAgeSeconds={5}; subscriberStaleSeconds={6}; patients={7}; loadedPatients={8}; searchCount={9}; lastSearchAt={10}; lastPushAt={11}; lastPushResult={12}; storageMode={13}; store={14}",
+                        alive,
+                        GetSubscriberStateLocked(alive, age),
                         _subscriberName ?? "",
                         FormatTime(_subscribedAt == default(DateTime) ? (DateTime?)null : _subscribedAt),
+                        FormatTime(_lastSubscriberActivityAt),
+                        age.HasValue ? age.Value.ToString() : "",
+                        ((int)SubscriberStaleTimeout.TotalSeconds).ToString(),
                         _patients.Count,
                         _loadedPatientCount,
                         _searchCount,
@@ -110,6 +118,7 @@ namespace PhilipsHifBridge
                 _callbackChannel = channel;
                 _subscriberName = subscription == null ? "(null)" : subscription.Name;
                 _subscribedAt = DateTime.Now;
+                _lastSubscriberActivityAt = DateTime.Now;
             }
 
             if (channel != null)
@@ -126,7 +135,8 @@ namespace PhilipsHifBridge
 
         private void OnSubscriberChannelEnded(object sender, EventArgs e)
         {
-            var state = sender is ICommunicationObject comm ? comm.State.ToString() : "ended";
+            var comm = sender as ICommunicationObject;
+            var state = comm == null ? "ended" : comm.State.ToString();
             ClearSubscriber("WCF channel " + state);
         }
 
@@ -141,6 +151,7 @@ namespace PhilipsHifBridge
                 _callbackChannel = null;
                 _subscriberName = null;
                 _subscribedAt = default(DateTime);
+                _lastSubscriberActivityAt = null;
             }
 
             if (!string.IsNullOrEmpty(name))
@@ -162,15 +173,49 @@ namespace PhilipsHifBridge
             if (_callback == null)
                 return false;
             if (_callbackChannel == null)
-                return true;
-            return _callbackChannel.State == CommunicationState.Opened;
+                return !IsSubscriberStaleLocked();
+            return _callbackChannel.State == CommunicationState.Opened && !IsSubscriberStaleLocked();
+        }
+
+        private bool IsSubscriberStaleLocked()
+        {
+            if (!_lastSubscriberActivityAt.HasValue)
+                return false;
+
+            return DateTime.Now - _lastSubscriberActivityAt.Value > SubscriberStaleTimeout;
+        }
+
+        private int? GetSubscriberAgeSecondsLocked()
+        {
+            if (!_lastSubscriberActivityAt.HasValue)
+                return null;
+
+            var age = DateTime.Now - _lastSubscriberActivityAt.Value;
+            return Math.Max(0, (int)age.TotalSeconds);
+        }
+
+        private string GetSubscriberStateLocked(bool alive, int? age)
+        {
+            if (_callback == null)
+                return "None";
+            if (_callbackChannel != null && _callbackChannel.State != CommunicationState.Opened)
+                return _callbackChannel.State.ToString();
+            if (!alive && age.HasValue)
+                return "Stale";
+            return "Online";
+        }
+
+        private void TouchSubscriberActivityLocked()
+        {
+            if (_callback != null)
+                _lastSubscriberActivityAt = DateTime.Now;
         }
 
         public bool PushToSubscriber(PIChange change, PIChangeDescriptor descriptor, out string result)
         {
             IPIClientCallback callback;
             string name;
-            DateTime subscribedAt;
+            DateTime subscribedAt = default(DateTime);
             lock (_sync)
             {
                 StorePatientChange(change);
@@ -180,6 +225,7 @@ namespace PhilipsHifBridge
                     _callback = null;
                     _subscriberName = null;
                     _subscribedAt = default(DateTime);
+                    _lastSubscriberActivityAt = null;
                     callback = null;
                     name = "";
                 }
@@ -188,6 +234,7 @@ namespace PhilipsHifBridge
                     callback = _callback;
                     name = _subscriberName;
                     subscribedAt = _subscribedAt;
+                    TouchSubscriberActivityLocked();
                 }
             }
 
@@ -259,6 +306,7 @@ namespace PhilipsHifBridge
             {
                 _searchCount++;
                 _lastSearchAt = DateTime.Now;
+                TouchSubscriberActivityLocked();
                 var matched = FilterPatients(query);
                 var results = numberOfRecords > 0
                     ? new List<PatientIdentity>(matched.Take(numberOfRecords))
@@ -315,7 +363,10 @@ namespace PhilipsHifBridge
         public void StorePatientChangeFromExecute(PIChange change)
         {
             lock (_sync)
+            {
+                TouchSubscriberActivityLocked();
                 StorePatientChange(change);
+            }
         }
 
         private void StorePatientChange(PIChange change)
@@ -398,6 +449,8 @@ namespace PhilipsHifBridge
             {
                 _lastPushAt = DateTime.Now;
                 _lastPushResult = result;
+                if (result != null && result.IndexOf("OnPIChange returned True", StringComparison.OrdinalIgnoreCase) >= 0)
+                    TouchSubscriberActivityLocked();
             }
         }
 

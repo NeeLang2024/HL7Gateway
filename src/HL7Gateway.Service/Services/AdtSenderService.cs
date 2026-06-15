@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using HL7Gateway.Core.DbContexts;
 using HL7Gateway.Core.Entities;
+using HL7Gateway.Core.Services.Implementations;
 using HL7Gateway.Core.Services.Interfaces;
 using HL7Gateway.Service.Services.Wcf;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ public class AdtSenderService : IAdtSenderService
     private readonly IWsiService _wsiService;
     private readonly IMllpSenderService _mllpSender;
     private readonly IConfiguration _configuration;
+    private readonly IntegrationTraceService _trace;
     private readonly ILogger<AdtSenderService> _logger;
 
     public AdtSenderService(
@@ -31,6 +33,7 @@ public class AdtSenderService : IAdtSenderService
         IWsiService wsiService,
         IMllpSenderService mllpSender,
         IConfiguration configuration,
+        IntegrationTraceService trace,
         ILogger<AdtSenderService> logger)
     {
         _scopeFactory = scopeFactory;
@@ -40,6 +43,7 @@ public class AdtSenderService : IAdtSenderService
         _wsiService = wsiService;
         _mllpSender = mllpSender;
         _configuration = configuration;
+        _trace = trace;
         _logger = logger;
     }
 
@@ -103,6 +107,9 @@ public class AdtSenderService : IAdtSenderService
         var sent = 0;
         foreach (var item in pending)
         {
+            var traceId = IntegrationTraceService.ExtractControlId(item.MessageContent)
+                ?? $"QUEUE-{item.QueueId}";
+
             item.Status = 1;
             item.RetryCount++;
             await db.SaveChangesAsync(cancellationToken);
@@ -118,6 +125,12 @@ public class AdtSenderService : IAdtSenderService
             {
                 var bridge = await _hifBridgeClient.PushAdtAsync(item.MessageContent, cancellationToken);
                 bridgeOk = bridge.Success;
+                await _trace.AppendAsync(db, traceId, "Bridge.Push", "Bridge",
+                    bridgeOk ? "OK" : "Failed",
+                    bridgeOk
+                        ? TruncateTrace(bridge.Response ?? "accepted", 500)
+                        : TruncateTrace(bridge.Error ?? bridge.Response ?? "failed", 500),
+                    "hif-bridge", (int)sw.ElapsedMilliseconds, "AdtQueue", item.QueueId, cancellationToken);
                 if (bridgeOk)
                 {
                     success = true;
@@ -135,6 +148,10 @@ public class AdtSenderService : IAdtSenderService
             {
                 (wcfOk, response, error) = await PushViaWcfAsync(item, db, cancellationToken);
                 if (wcfOk) success = true;
+                await _trace.AppendAsync(db, traceId, "Wcf.Push", "Bridge",
+                    wcfOk ? "OK" : "Failed",
+                    TruncateTrace(wcfOk ? response : error, 500),
+                    "hif-bridge", (int)sw.ElapsedMilliseconds, "AdtQueue", item.QueueId, cancellationToken);
             }
 
             var target = GetMllpTarget();
@@ -177,6 +194,9 @@ public class AdtSenderService : IAdtSenderService
                 item.SentAt = now;
                 item.AckReceivedAt = now;
                 sent++;
+                await _trace.AppendAsync(db, traceId, "AdtQueue.Sent", "Outbound", "OK",
+                    TruncateTrace(response, 500), "adt-queue", (int)sw.ElapsedMilliseconds,
+                    "AdtQueue", item.QueueId, cancellationToken);
                 _logger.LogInformation(
                     "ADT {Type} queue #{QueueId} sent successfully to {Endpoint}: {Response}",
                     item.AdtMessageType,
@@ -210,6 +230,9 @@ public class AdtSenderService : IAdtSenderService
                     item.Status = 3;
                 item.NextRetryAt = now + Backoff(item.RetryCount);
                 item.LastError = error;
+                await _trace.AppendAsync(db, traceId, "AdtQueue.Failed", "Outbound", "Failed",
+                    TruncateTrace(error, 500), "adt-queue", (int)sw.ElapsedMilliseconds,
+                    "AdtQueue", item.QueueId, cancellationToken);
                 _logger.LogWarning(
                     "ADT {Type} queue #{QueueId} send failed ({Retry}/{MaxRetries}) to {Endpoint}: {Error}",
                     item.AdtMessageType,
@@ -352,6 +375,12 @@ public class AdtSenderService : IAdtSenderService
         2 => TimeSpan.FromSeconds(30),
         _ => TimeSpan.FromMinutes(2),
     };
+
+    private static string TruncateTrace(string? s, int max)
+    {
+        if (string.IsNullOrEmpty(s)) return "";
+        return s.Length <= max ? s : s[..max] + "...";
+    }
 
     private static (string PatientId, string VisitId) ExtractPatientAndVisit(string raw)
     {

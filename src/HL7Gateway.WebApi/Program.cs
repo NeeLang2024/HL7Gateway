@@ -4,6 +4,7 @@ using HL7Gateway.Core.Data;
 using HL7Gateway.Core.DbContexts;
 using HL7Gateway.Core.Entities;
 using HL7Gateway.Core.Services;
+using HL7Gateway.Core.Integration.Routing;
 using HL7Gateway.Core.Services.Implementations;
 using HL7Gateway.Core.Services.Interfaces;
 using HL7Gateway.WebApi.Hubs;
@@ -77,6 +78,9 @@ builder.Services.AddSingleton<HttpClient>();
 builder.Services.AddSingleton<IWsiService, WsiService>();
 builder.Services.AddSingleton<AutoAdtFeatureService>();
 builder.Services.AddSingleton<AutoAdtHisBindingSync>();
+builder.Services.AddSingleton<IntegrationTraceService>();
+builder.Services.AddSingleton<IntegrationHubSettingsService>();
+builder.Services.AddSingleton<RoutingEngine>();
 builder.Services.AddSingleton<IEventPublisher, SignalrEventPublisher>();
 builder.Services.AddSingleton<IRawWebSocketManager, RawWebSocketManager>();
 

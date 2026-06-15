@@ -24,6 +24,7 @@ import AutoAdtBeds from '../views/AutoAdtBeds.vue'
 import AutoAdtLogs from '../views/AutoAdtLogs.vue'
 import AutoAdtScanRules from '../views/AutoAdtScanRules.vue'
 import AutoAdtSettings from '../views/AutoAdtSettings.vue'
+import IntegrationHub from '../views/IntegrationHub.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { noAuth: true } },
@@ -35,6 +36,7 @@ const routes = [
   { path: '/search', name: 'MessageSearch', component: MessageSearch },
   { path: '/compare', name: 'MessageCompare', component: MessageCompare },
   { path: '/adt', name: 'ADTQueue', component: ADTQueue },
+  { path: '/integration', name: 'IntegrationHub', component: IntegrationHub },
   { path: '/auto-adt', redirect: '/auto-adt/scan' },
   { path: '/auto-adt/scan', name: 'AutoAdtScan', component: AutoAdtScan },
   { path: '/auto-adt/board', name: 'AutoAdtBoard', component: AutoAdtBoard },

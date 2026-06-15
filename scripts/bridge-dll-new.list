@@ -1,0 +1,18 @@
+# 桥接件打包用 dll_NEW 精简清单（与 tools/PhilipsHifBridge/build.bat 一致 + 文档预留）
+# pack.sh 只复制本清单中的文件到 publish/bridge/dll_NEW/，不复制完整 dll_NEW（约 92MB）
+Philips.PlatformServices.dll
+Philips.Platform.dll
+BouncyCastle.Crypto.dll
+Microsoft.Web.Administration.dll
+Interop.NetFwTypeLib.dll
+Interop.IWshRuntimeLibrary.dll
+Microsoft.SqlServer.Smo.dll
+Microsoft.SqlServer.SqlEnum.dll
+Microsoft.SqlServer.ConnectionInfo.dll
+Microsoft.SqlServer.SmoExtended.dll
+Microsoft.SqlServer.Management.Sdk.Sfc.dll
+Microsoft.SqlServer.RegSvrEnum.dll
+Philips.IPM.MultiPatAdt.dll
+Philips.PIC.ManagedGateway.dll
+Philips.PIC.ManagedGateway.manifest
+Philips.PIC.ManagedGateway.tlb

@@ -17,6 +17,7 @@ const navItems = [
   { path: '/search', label: '全文搜索', icon: '🔍' },
   { path: '/compare', label: '消息对比', icon: '⚖️' },
   { path: '/adt', label: 'ADT 管理', icon: '🔄' },
+  { path: '/integration', label: '集成中枢', icon: '🔀' },
   { path: '/auto-adt/scan', label: '扫码入院', icon: '▣' },
   { path: '/auto-adt/board', label: '床位看板', icon: '▦' },
   { path: '/auto-adt/beds', label: '床位映射', icon: '▤' },

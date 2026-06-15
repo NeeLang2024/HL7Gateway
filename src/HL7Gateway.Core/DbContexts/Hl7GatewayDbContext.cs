@@ -26,6 +26,8 @@ public class Hl7GatewayDbContext : DbContext
     public DbSet<AutoAdtMessage> AutoAdtMessages => Set<AutoAdtMessage>();
     public DbSet<AutoAdtScanRule> AutoAdtScanRules => Set<AutoAdtScanRule>();
     public DbSet<AutoAdtSetting> AutoAdtSettings => Set<AutoAdtSetting>();
+    public DbSet<IntegrationTraceEvent> IntegrationTraceEvents => Set<IntegrationTraceEvent>();
+    public DbSet<RoutingRule> RoutingRules => Set<RoutingRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -108,6 +110,19 @@ public class Hl7GatewayDbContext : DbContext
         {
             e.HasIndex(x => x.RuleType);
             e.HasIndex(x => new { x.RuleType, x.IsEnabled, x.Priority });
+        });
+
+        modelBuilder.Entity<IntegrationTraceEvent>(e =>
+        {
+            e.HasIndex(x => x.TraceId);
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => new { x.TraceId, x.CreatedAt });
+        });
+
+        modelBuilder.Entity<RoutingRule>(e =>
+        {
+            e.HasIndex(x => x.IsEnabled);
+            e.HasIndex(x => new { x.IsEnabled, x.Priority });
         });
     }
 }

@@ -67,7 +67,11 @@ public class ADTController : ControllerBase
                 baseUrl,
                 raw,
                 subscriber = hasSubscriber,
+                subscriberState = parsed.GetValueOrDefault("subscriberState"),
                 name = subscriberName,
+                lastSubscriberActivityAt = parsed.GetValueOrDefault("lastSubscriberActivityAt"),
+                subscriberAgeSeconds = ToInt(parsed.GetValueOrDefault("subscriberAgeSeconds")),
+                subscriberStaleSeconds = ToInt(parsed.GetValueOrDefault("subscriberStaleSeconds")),
                 patients = ToInt(parsed.GetValueOrDefault("patients")),
                 loadedPatients = ToInt(parsed.GetValueOrDefault("loadedPatients")),
                 searchCount = ToInt(parsed.GetValueOrDefault("searchCount")),
@@ -291,10 +295,7 @@ public class ADTController : ControllerBase
 
     private static bool ResolveBridgeSubscriber(Dictionary<string, string> parsed)
     {
-        if (ToBool(parsed.GetValueOrDefault("subscriber")))
-            return true;
-        var name = parsed.GetValueOrDefault("name");
-        return !string.IsNullOrWhiteSpace(name) && !name.Equals("(null)", StringComparison.OrdinalIgnoreCase);
+        return ToBool(parsed.GetValueOrDefault("subscriber"));
     }
 
     private static bool ToBool(string? value)

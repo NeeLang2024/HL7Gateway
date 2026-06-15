@@ -3,6 +3,7 @@ using HL7Gateway.Core.DbContexts;
 using HL7Gateway.Core.Entities;
 using HL7Gateway.Core.Services.Implementations;
 using HL7Gateway.Core.Services.Interfaces;
+using HL7Gateway.Service.Services.Integration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -14,23 +15,20 @@ public class MessageProcessorService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IHl7ParserService _parserService;
     private readonly IEventPublisher _eventPublisher;
-    private readonly IAdtSenderService _adtSender;
-    private readonly AutoAdtHisBindingSync _hisBindingSync;
+    private readonly InboundRoutingService _inboundRouting;
     private readonly ILogger<MessageProcessorService> _logger;
 
     public MessageProcessorService(
         IServiceScopeFactory scopeFactory,
         IHl7ParserService parserService,
         IEventPublisher eventPublisher,
-        IAdtSenderService adtSender,
-        AutoAdtHisBindingSync hisBindingSync,
+        InboundRoutingService inboundRouting,
         ILogger<MessageProcessorService> logger)
     {
         _scopeFactory = scopeFactory;
         _parserService = parserService;
         _eventPublisher = eventPublisher;
-        _adtSender = adtSender;
-        _hisBindingSync = hisBindingSync;
+        _inboundRouting = inboundRouting;
         _logger = logger;
     }
 
@@ -80,6 +78,11 @@ public class MessageProcessorService
 
         db.Hl7Messages.Add(message);
         await db.SaveChangesAsync(ct);
+
+        var trace = scope.ServiceProvider.GetRequiredService<IntegrationTraceService>();
+        await trace.AppendAsync(db, message.MessageControlId, "Mllp.Received", "Inbound", "OK",
+            $"{e.SourceIp}:{e.SourcePort} {message.MessageType}^{message.TriggerEvent}",
+            "mllp-inbound", null, "Hl7Message", message.MessageId, ct);
 
         List<SegmentParseResult> segments = [];
         List<Observation> observations = [];
@@ -184,22 +187,15 @@ public class MessageProcessorService
                 segments.Count, observations.Count, vitalSigns.Count, visits.Count,
                 message.RawContent?.Length ?? -1);
 
-            // Auto-enqueue ADT messages for forwarding
-            if (success && message.MessageType == "ADT" && !string.IsNullOrEmpty(message.TriggerEvent) && message.RawContent is not null)
-            {
-                try { await _adtSender.EnqueueAsync(message.TriggerEvent, message.RawContent, "Auto:MLLP", 1); }
-                catch (Exception adtEx) { _logger.LogWarning(adtEx, "Failed to auto-enqueue ADT {Type}", message.TriggerEvent); }
+            await trace.AppendAsync(db, message.MessageControlId, "Mllp.Parsed", "Inbound",
+                success ? "OK" : "Failed",
+                success
+                    ? $"段 {segments.Count} · 观察 {observations.Count} · 体征 {vitalSigns.Count}"
+                    : TruncateMsg(error, 500),
+                "mllp-inbound", null, "Hl7Message", message.MessageId, ct);
 
-                try
-                {
-                    await _hisBindingSync.TrySyncFromHl7Async(
-                        db, message.RawContent, message.TriggerEvent, message.PatientId, message.VisitId, ct);
-                }
-                catch (Exception bindEx)
-                {
-                    _logger.LogWarning(bindEx, "HIS Auto ADT binding sync failed for {Type}", message.TriggerEvent);
-                }
-            }
+            // ADT 转发：默认 Legacy；启用路由模块后按规则处理（模块默认关闭）
+            await _inboundRouting.HandleInboundAdtAsync(db, message, success, ct);
 
             await db.SaveChangesAsync(ct);
         }
@@ -373,6 +369,12 @@ public class MessageProcessorService
             }
         }
         await db.SaveChangesAsync(ct);
+    }
+
+    private static string TruncateMsg(string? s, int max)
+    {
+        if (string.IsNullOrEmpty(s)) return "";
+        return s.Length <= max ? s : s[..max] + "...";
     }
 
     private static string BuildAck(string controlId, string ackCode)

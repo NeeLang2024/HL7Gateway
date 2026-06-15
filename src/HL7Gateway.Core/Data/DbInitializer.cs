@@ -28,6 +28,8 @@ public static class DbInitializer
             await EnsureAutoAdtColumnsAsync(db);
             await EnsureAutoAdtSettingsTableAsync(db);
             await EnsurePerformanceIndexesAsync(db);
+            await EnsureIntegrationTraceTableAsync(db);
+            await EnsureRoutingRulesTableAsync(db);
         }
         else
         {
@@ -567,6 +569,122 @@ CREATE INDEX IF NOT EXISTS [IX_AdtQueue_Status_CreatedAt] ON [AdtQueue]([Status]
         catch (Exception ex)
         {
             Console.Error.WriteLine($"[DbInitializer] Ensure performance indexes failed: {ex.Message}");
+        }
+    }
+
+    private static async Task EnsureIntegrationTraceTableAsync(Hl7GatewayDbContext db)
+    {
+        try
+        {
+            var isSqlServer = db.Database.ProviderName?.Contains("SqlServer") == true;
+            if (isSqlServer)
+            {
+                await db.Database.ExecuteSqlRawAsync(@"
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'IntegrationTraceEvents')
+BEGIN
+    CREATE TABLE [dbo].[IntegrationTraceEvents] (
+        [Id] BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        [TraceId] NVARCHAR(100) NOT NULL,
+        [Step] NVARCHAR(80) NOT NULL,
+        [Category] NVARCHAR(40) NOT NULL,
+        [Status] NVARCHAR(20) NOT NULL,
+        [PartnerKey] NVARCHAR(80) NULL,
+        [Detail] NVARCHAR(2000) NULL,
+        [DurationMs] INT NULL,
+        [RelatedEntityType] NVARCHAR(40) NULL,
+        [RelatedEntityId] BIGINT NULL,
+        [CreatedAt] DATETIME2 NOT NULL
+    );
+    CREATE INDEX [IX_IntegrationTraceEvents_TraceId] ON [dbo].[IntegrationTraceEvents]([TraceId]);
+    CREATE INDEX [IX_IntegrationTraceEvents_CreatedAt] ON [dbo].[IntegrationTraceEvents]([CreatedAt]);
+    CREATE INDEX [IX_IntegrationTraceEvents_TraceId_CreatedAt] ON [dbo].[IntegrationTraceEvents]([TraceId], [CreatedAt]);
+END");
+            }
+            else
+            {
+                await db.Database.ExecuteSqlRawAsync(@"
+CREATE TABLE IF NOT EXISTS [IntegrationTraceEvents] (
+    [Id] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    [TraceId] TEXT NOT NULL,
+    [Step] TEXT NOT NULL,
+    [Category] TEXT NOT NULL,
+    [Status] TEXT NOT NULL,
+    [PartnerKey] TEXT NULL,
+    [Detail] TEXT NULL,
+    [DurationMs] INTEGER NULL,
+    [RelatedEntityType] TEXT NULL,
+    [RelatedEntityId] INTEGER NULL,
+    [CreatedAt] TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS [IX_IntegrationTraceEvents_TraceId] ON [IntegrationTraceEvents]([TraceId]);
+CREATE INDEX IF NOT EXISTS [IX_IntegrationTraceEvents_CreatedAt] ON [IntegrationTraceEvents]([CreatedAt]);
+CREATE INDEX IF NOT EXISTS [IX_IntegrationTraceEvents_TraceId_CreatedAt] ON [IntegrationTraceEvents]([TraceId], [CreatedAt]);");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[DbInitializer] Ensure IntegrationTraceEvents table failed: {ex.Message}");
+        }
+    }
+
+    private static async Task EnsureRoutingRulesTableAsync(Hl7GatewayDbContext db)
+    {
+        try
+        {
+            var isSqlServer = db.Database.ProviderName?.Contains("SqlServer") == true;
+            if (isSqlServer)
+            {
+                await db.Database.ExecuteSqlRawAsync(@"
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'RoutingRules')
+BEGIN
+    CREATE TABLE [dbo].[RoutingRules] (
+        [Id] BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        [Name] NVARCHAR(100) NOT NULL,
+        [Priority] INT NOT NULL DEFAULT 100,
+        [IsEnabled] BIT NOT NULL DEFAULT 1,
+        [MessageType] NVARCHAR(20) NULL,
+        [TriggerEvent] NVARCHAR(20) NULL,
+        [SourceIpPattern] NVARCHAR(100) NULL,
+        [SendingApp] NVARCHAR(100) NULL,
+        [SendingFacility] NVARCHAR(100) NULL,
+        [Action] NVARCHAR(40) NOT NULL DEFAULT 'ForwardAdt',
+        [WebhookUrl] NVARCHAR(500) NULL,
+        [TransformJson] NVARCHAR(MAX) NULL,
+        [Remark] NVARCHAR(300) NULL,
+        [CreatedAt] DATETIME2 NOT NULL,
+        [UpdatedAt] DATETIME2 NOT NULL
+    );
+    CREATE INDEX [IX_RoutingRules_IsEnabled] ON [dbo].[RoutingRules]([IsEnabled]);
+    CREATE INDEX [IX_RoutingRules_IsEnabled_Priority] ON [dbo].[RoutingRules]([IsEnabled], [Priority]);
+END");
+            }
+            else
+            {
+                await db.Database.ExecuteSqlRawAsync(@"
+CREATE TABLE IF NOT EXISTS [RoutingRules] (
+    [Id] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    [Name] TEXT NOT NULL,
+    [Priority] INTEGER NOT NULL DEFAULT 100,
+    [IsEnabled] INTEGER NOT NULL DEFAULT 1,
+    [MessageType] TEXT NULL,
+    [TriggerEvent] TEXT NULL,
+    [SourceIpPattern] TEXT NULL,
+    [SendingApp] TEXT NULL,
+    [SendingFacility] TEXT NULL,
+    [Action] TEXT NOT NULL DEFAULT 'ForwardAdt',
+    [WebhookUrl] TEXT NULL,
+    [TransformJson] TEXT NULL,
+    [Remark] TEXT NULL,
+    [CreatedAt] TEXT NOT NULL,
+    [UpdatedAt] TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS [IX_RoutingRules_IsEnabled] ON [RoutingRules]([IsEnabled]);
+CREATE INDEX IF NOT EXISTS [IX_RoutingRules_IsEnabled_Priority] ON [RoutingRules]([IsEnabled], [Priority]);");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[DbInitializer] Ensure RoutingRules table failed: {ex.Message}");
         }
     }
 

@@ -309,6 +309,57 @@ export function fetchMonitor(): Promise<any> {
   return request(`${API_BASE}/monitor`)
 }
 
+// Integration Hub
+export function fetchIntegrationPartners(): Promise<any> {
+  return request(`${API_BASE}/integration/partners`)
+}
+export function fetchIntegrationTraces(params?: { traceId?: string; limit?: number; recent?: number }): Promise<any> {
+  return request(`${API_BASE}/integration/traces${buildQuery(params as any)}`)
+}
+export function injectIntegrationHl7(hl7: string, mode: 'adt-queue' | 'bridge-direct' = 'adt-queue'): Promise<any> {
+  return request(`${API_BASE}/integration/simulate/inject`, {
+    method: 'POST',
+    body: JSON.stringify({ hl7, mode }),
+  })
+}
+export function replayIntegrationMessage(messageId: number): Promise<any> {
+  return request(`${API_BASE}/integration/simulate/replay/${messageId}`, { method: 'POST' })
+}
+
+export function fetchRoutingSettings(): Promise<any> {
+  return request(`${API_BASE}/integration/routing/settings`)
+}
+export function saveRoutingSettings(settings: any): Promise<any> {
+  return request(`${API_BASE}/integration/routing/settings`, {
+    method: 'PUT',
+    body: JSON.stringify(settings),
+  })
+}
+export function fetchRoutingRules(): Promise<any> {
+  return request(`${API_BASE}/integration/routing/rules`)
+}
+export function createRoutingRule(rule: any): Promise<any> {
+  return request(`${API_BASE}/integration/routing/rules`, {
+    method: 'POST',
+    body: JSON.stringify(rule),
+  })
+}
+export function updateRoutingRule(id: number, rule: any): Promise<any> {
+  return request(`${API_BASE}/integration/routing/rules/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(rule),
+  })
+}
+export function deleteRoutingRule(id: number): Promise<any> {
+  return request(`${API_BASE}/integration/routing/rules/${id}`, { method: 'DELETE' })
+}
+export function testRoutingMatch(body: any): Promise<any> {
+  return request(`${API_BASE}/integration/routing/test`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
 // FHIR
 export function fhirPatientSearch(params: Record<string, string>): Promise<any> {
   return request(`${API_BASE}/fhir/Patient${buildQuery(params)}`)

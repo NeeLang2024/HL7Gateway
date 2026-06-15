@@ -40,10 +40,13 @@ const picixStatus = computed(() => {
   if (!b.reachable) {
     return { text: '桥接离线', sub: '无法连接桥接件，请检查服务', color: '#ef4444', dot: '#ef4444' }
   }
-  const subscribed = b.subscriber || (b.name && b.name !== '(null)')
+  const subscribed = b.subscriber === true
   if (subscribed) {
     const who = b.name ? `已订阅 · ${b.name}` : '已订阅'
     return { text: 'PIC iX ' + who, sub: '可接收 ADT 消息', color: '#10b981', dot: '#10b981' }
+  }
+  if (b.name && b.name !== '(null)') {
+    return { text: '桥接在线 · 订阅超时', sub: `最近订阅者 · ${b.name}`, color: '#f59e0b', dot: '#f59e0b' }
   }
   return { text: '桥接在线 · 未订阅', sub: 'PIC iX 尚未订阅，暂不可收 ADT', color: '#f59e0b', dot: '#f59e0b' }
 })
