@@ -17,7 +17,13 @@ HL7Gateway 是一套面向医院的 HL7 中间件，包含：
 | **PhilipsHifBridge** | 独立 Windows 服务：WCF/PPIS 桥接，供 PIC iX 订阅与接收 ADT |
 | **Auto ADT** | 腕带 + 床位码扫码入院、床位看板、绑定管理 |
 
-> **免责声明**：本软件仅供集成开发与研究使用，不构成医疗器械。用于临床环境前请自行完成验证、合规与风险评估。
+> **免责声明**
+>
+> 本项目 **仅供 HL7 / 设备集成的开发、联调与功能验证**，用于帮助理解消息流、接口对接与调试流程。
+>
+> **不得用于临床诊疗、患者监护、医嘱执行或任何直接影响患者安全与医疗决策的场景。** 本软件 **不是医疗器械**，未经过临床验证、注册或认证。
+>
+> 任何在生产或临床环境中部署、使用本软件的行为，均由使用者自行承担全部验证、合规与法律责任。作者不对因使用本软件造成的任何损害承担责任。
 
 ---
 
@@ -218,7 +224,13 @@ Open-source HL7 integration gateway: MLLP ingestion, Vue admin UI, Philips PIC i
 | **PhilipsHifBridge** | Separate Windows service: WCF/PPIS bridge for PIC iX |
 | **Auto ADT** | Wristband + bed barcode admission, bed board, bindings |
 
-> **Disclaimer**: For integration and research only. Not a medical device. Validate for clinical use yourself.
+> **Disclaimer**
+>
+> This project is **for development, integration testing, and functional debugging only** — to explore HL7 messaging, interface wiring, and troubleshooting workflows.
+>
+> **It must not be used for clinical care, patient monitoring, order execution, or any scenario that directly affects patient safety or medical decisions.** This software is **not a medical device** and has **not** been clinically validated, registered, or certified.
+>
+> Anyone who deploys or uses this software in production or clinical settings does so at their own risk and is solely responsible for validation, compliance, and legal obligations. The authors accept no liability for harm arising from use of this software.
 
 ---
 
