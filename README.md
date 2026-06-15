@@ -28,7 +28,8 @@ HL7Gateway 是一套面向医院的 HL7 中间件，包含：
 - **Node.js 20+**（编译前端）
 - **SQL Server** 或 **SQLite**（开发）
 - **Visual Studio 2022** + .NET Framework 4.x 桌面开发 workload（**仅编译桥接件**）
-- **Philips PIC iX 安装介质中的 HIF/PPIS DLL**（**不可随本仓库分发**，见下文）
+
+> **第三方专有组件**：若需与 Philips PIC iX 等设备集成并引用其专有库，须**自行向 Philips 官方取得合法授权**。**本仓库不包含、也不提供任何 Philips 或其他第三方的专有文件**；**严禁分发、上传或再传播未经授权的相关文件**。使用者须自行承担合规与许可责任。
 
 ---
 
@@ -95,15 +96,14 @@ src/HL7Gateway.Service/appsettings.example.json   →  appsettings.json
 
 **切勿将含真实密码的 `appsettings.json` 提交到 Git。**
 
-### 2. 准备 Philips DLL（桥接件）
+### 2. 第三方专有组件（桥接件）
 
-从已授权 PIC iX 服务器复制 Philips SDK DLL 到仓库根目录：
+桥接功能可能依赖 Philips 等厂商的专有库。**本仓库仅提供集成示例源码，不包含任何第三方专有文件。**
 
-```text
-dll_NEW/Philips.PlatformServices.dll   （及 csproj 引用的依赖项）
-```
-
-这些文件受 Philips 许可约束，**本仓库不包含、也不授权再分发**。
+- 如需引用 Philips 相关组件，须**事先取得 Philips 官方书面或合同授权**；
+- **严禁**将未经授权的专有库、安装介质副本或衍生包随本仓库、安装包或公开渠道**分发、上传或再传播**；
+- 编译、部署桥接件所需专有组件，须由使用者在**合法授权范围内**自行准备；
+- 因未获授权或违规使用第三方组件而产生的一切法律与合规风险，由使用者自行承担。
 
 ### 3. 编译打包（macOS / Linux / Windows）
 
@@ -115,7 +115,7 @@ cd frontend && npm install && cd ..
 
 产物：`publish/HL7Gateway.zip`（含 Service、WebApi、bridge 脚本；桥接 exe 需在 Windows 上编译）
 
-### 4. 编译桥接件（仅 Windows）
+### 4. 编译桥接件（仅 Windows，可选）
 
 ```bat
 cd tools\PhilipsHifBridge
@@ -176,7 +176,7 @@ README.md
 .gitignore
 ```
 
-**不要上传**：`publish/Service/`、`publish/WebApi/`、`bin/`、`obj/`、`node_modules/`、`*.zip`、`dll/`、`docs/`、含密码的配置文件。
+**不要上传**：`publish/Service/`、`publish/WebApi/`、`bin/`、`obj/`、`node_modules/`、`*.zip`、未经授权的第三方专有库、`docs/`、含密码的配置文件。
 
 **不提供 GitHub Release**：仓库仅含源码，使用者自行 `./scripts/pack.sh` 编译；不在 Releases 页面上传 zip 或 exe。
 
@@ -195,7 +195,7 @@ README.md
 
 ## 贡献
 
-欢迎 Issue 与 Pull Request。提交前请确保未包含 Philips 专有 DLL、数据库密码或内部文档。
+欢迎 Issue 与 Pull Request。提交前请确保未包含未经授权的第三方专有文件、数据库密码或内部文档。
 
 ---
 
@@ -229,7 +229,8 @@ Open-source HL7 integration gateway: MLLP ingestion, Vue admin UI, Philips PIC i
 - Node.js 20+
 - SQL Server or SQLite
 - Visual Studio 2022 with .NET Framework desktop workload (bridge only)
-- Philips HIF/PPIS DLLs from a **licensed PIC iX installation** (not included in this repo)
+
+> **Third-party proprietary components**: Integration with Philips PIC iX or similar systems may require vendor libraries that you must **obtain under official authorization from Philips**. **This repository does not include or supply any Philips or other third-party proprietary files.** **Unauthorized distribution, upload, or redistribution of such materials is strictly prohibited.** You are solely responsible for licensing and compliance.
 
 ---
 
@@ -287,10 +288,14 @@ src/HL7Gateway.Service/appsettings.example.json   →  appsettings.json
 
 Never commit real credentials.
 
-### 2. Philips DLLs (bridge)
+### 2. Third-party components (bridge)
 
-Copy SDK DLLs from your PIC iX server into `dll_NEW/` per `tools/PhilipsHifBridge/PhilipsHifBridge.csproj`.  
-**Redistribution is not permitted.**
+The bridge may depend on proprietary libraries from Philips or other vendors. **This repository provides integration sample source code only and includes no third-party proprietary files.**
+
+- To reference Philips components, you must **obtain official authorization from Philips** in advance;
+- **Do not** distribute, upload, or redistribute unauthorized proprietary libraries, installation media copies, or derived packages with this repo, installers, or public channels;
+- Any proprietary files required to build or deploy the bridge must be supplied by you **within the scope of your valid license**;
+- You bear all legal and compliance risks arising from unauthorized or non-compliant use of third-party components.
 
 ### 3. Build middleware (cross-platform)
 
@@ -301,7 +306,7 @@ cd frontend && npm install && cd ..
 
 Output: `publish/HL7Gateway.zip`
 
-### 4. Build bridge (Windows only)
+### 4. Build bridge (Windows only, optional)
 
 ```bat
 cd tools\PhilipsHifBridge
@@ -333,7 +338,7 @@ cd bridge && uninstall-bridge-service.bat
 
 Include: `src/`, `frontend/` (source only), `tools/`, `database/`, `scripts/`, root `publish/*.bat`, `LICENSE`, `README.md`, `.gitignore`.
 
-Exclude: build outputs, `node_modules/`, Philips DLLs, zip releases, internal docs, secrets.
+Exclude: build outputs, `node_modules/`, unauthorized third-party proprietary files, zip releases, internal docs, secrets.
 
 **No GitHub Releases**: source only — build locally with `./scripts/pack.sh`; do not attach zip/exe to Releases.
 
