@@ -1,0 +1,78 @@
+HL7Gateway 安装包说明
+=====================
+
+本 zip 包含三部分，在同一文件夹内：
+
+  Service\          HL7 接收/发送服务
+  WebApi\           Web 管理界面 + API
+  bridge\           Philips 桥接件（单独安装）
+
+──────────────────────────────────────
+一、首次安装
+──────────────────────────────────────
+
+1. 解压到固定目录，例如 C:\HL7Gateway
+
+2. 安装中间件（Service + WebApi 一起）：
+   双击 install.bat（会自动提权）
+   日志：install.log
+
+3. 安装桥接件（单独）：
+   进入 bridge 目录
+   右键「以管理员身份运行」install-bridge-service.bat
+   按提示输入本机 IP（PIC iX 能访问到的地址）
+
+4. 浏览器打开 http://localhost:5002
+   默认账号 admin / admin123
+
+──────────────────────────────────────
+二、升级（手动，不用 update 脚本）
+──────────────────────────────────────
+
+1. 停止服务：
+   net stop HL7GatewayWebApi
+   net stop HL7GatewayService
+   net stop PhilipsHifBridge          （若需更新桥接件）
+
+2. 解压新版本，覆盖旧目录中的文件：
+   - 覆盖 Service\ 和 WebApi\ 下所有 exe/dll
+   - 不要覆盖 appsettings.json（保留数据库连接等配置）
+   - 不要覆盖 jwt.key（若存在）
+   - 桥接件：覆盖 bridge\ 下文件，保留 patients.json
+
+3. 重新安装中间件：
+   运行 install.bat
+   日志：install.log
+
+4. 若桥接件有更新：
+   进入 bridge，运行 install-bridge-service.bat
+
+5. 升级后建议退出 Web 界面重新登录一次
+   （数据库结构由 WebApi 首次启动时自动维护，安装包不含 database 目录）
+
+──────────────────────────────────────
+三、卸载
+──────────────────────────────────────
+
+中间件： uninstall.bat（根目录，日志 uninstall.log）
+桥接件： bridge\uninstall-bridge-service.bat
+
+若卸载/安装卡住，先运行 force-clean.bat
+仍删不掉则重启电脑后再运行 install.bat
+
+手动命令（管理员 CMD）：
+  net stop HL7GatewayWebApi
+  net stop HL7GatewayService
+  taskkill /F /IM HL7Gateway.WebApi.exe
+  taskkill /F /IM HL7Gateway.Service.exe
+  sc delete HL7GatewayWebApi
+  sc delete HL7GatewayService
+
+──────────────────────────────────────
+四、端口
+──────────────────────────────────────
+
+5002   Web 管理界面
+2575   HL7 MLLP 接收
+5080   桥接件 HTTP 状态
+9912   桥接件 WCF (PIC iX ADT)

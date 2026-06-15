@@ -1,0 +1,6 @@
+@HL7Gateway.WebApi_HostAddress = http://localhost:5149
+
+GET {{HL7Gateway.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

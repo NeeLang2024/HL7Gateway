@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-HL7Gateway.Service-ba3e6f44-3c81-4fe9-8cf1-f37f69453ac8</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CoreWCF.Primitives" Version="1.9.0" />
+    <PackageReference Include="CoreWCF.NetTcp" Version="1.9.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.16" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.4" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HL7Gateway.Core\HL7Gateway.Core.csproj" />
+  </ItemGroup>
+
+</Project>

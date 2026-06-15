@@ -1,0 +1,56 @@
+# ── Build outputs (.NET) ──
+**/bin/
+**/obj/
+**/*.user
+**/*.suo
+.vs/
+
+# ── Frontend ──
+frontend/node_modules/
+frontend/dist/
+frontend/.tmp/
+
+# Generated static assets (rebuilt by scripts/pack.sh)
+src/HL7Gateway.WebApi/wwwroot/
+
+# ── Publish / release artifacts (keep deploy scripts only) ──
+publish/Service/
+publish/WebApi/
+publish/HL7Gateway.zip
+publish/**/*.exe
+publish/**/bin/
+publish/**/obj/
+
+# ── Bridge build output ──
+tools/PhilipsHifBridge/bin/
+tools/PhilipsHifBridge/obj/
+
+# ── Philips proprietary SDK (NOT redistributable — obtain from PIC iX install) ──
+dll/
+dll_NEW/
+
+# ── Secrets & local runtime ──
+**/jwt.key
+**/appsettings.json
+!**/appsettings.example.json
+**/appsettings.local.json
+*.log
+install.log
+uninstall.log
+**/hl7gateway_shared.db
+**/hl7gateway_shared.db-*
+
+# ── Internal docs (not for public repo) ──
+docs/
+Update.md
+database/
+
+# ── OS / IDE ──
+.DS_Store
+.idea/
+*.swp
+Thumbs.db
+
+# ── Archives ──
+*.zip
+*.7z
