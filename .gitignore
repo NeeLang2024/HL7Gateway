@@ -39,6 +39,10 @@ install.log
 uninstall.log
 **/hl7gateway_shared.db
 **/hl7gateway_shared.db-*
+**/hl7gateway.db
+**/hl7gateway.db-*
+**/*.db-shm
+**/*.db-wal
 
 # ── Internal docs (not for public repo) ──
 docs/
